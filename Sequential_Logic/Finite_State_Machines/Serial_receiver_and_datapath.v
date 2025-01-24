@@ -2,7 +2,8 @@ module top_module(
     input clk,
     input in,
     input reset,    // Synchronous reset
-    output reg done
+    output reg done,
+    output reg [7:0] out_byte
 ); 
     
     parameter NONE  = 3'd0,
@@ -59,6 +60,7 @@ module top_module(
         end
         else begin
             done <= (next == STOP);
+            out_byte[count] <= in;
         end
     end
 

@@ -55,7 +55,7 @@ module top_module(
             done <= 1'd0;
         end
         else begin
-            done <= (next == NONE_DONE | next == BYTE1_DONE);
+            done <= (next == BYTE3);
         end
     end
 
