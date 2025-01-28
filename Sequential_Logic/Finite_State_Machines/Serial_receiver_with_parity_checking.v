@@ -6,32 +6,25 @@ module top_module(
     output reg [7:0] out_byte
 ); 
     
-    parameter NONE  = 3'd0,
-              START = 3'd1,
-              DATA  = 3'd2,
-              STOP  = 3'd3,
-              WAIT  = 3'd4;
+    parameter NONE   = 3'd0,
+              START  = 3'd1,
+              DATA   = 3'd2,
+              STOP   = 3'd3,
+              WAIT   = 3'd4,
+              PARITY = 3'd5;
+    reg [3:0] count  = 4'd0;
     reg [2:0] state, next;
-    reg [3:0] count = 4'd0;
+    reg parity_check;
 
     // State transition logic (combinational)
     always @(*) begin
         case (state)
-            NONE  : next = in ? NONE : START;
-            START : next = DATA;
-            DATA  : begin
-                if (count >= 4'd8 && in) begin
-                    next = STOP;
-                end
-                else if (count < 4'd8) begin
-                    next = DATA;
-                end
-                else begin
-                    next = WAIT;
-                end
-            end
-            STOP  : next = in ? NONE : START;
-            WAIT  : next = in ? NONE : WAIT;
+            NONE   : next = in ? NONE : START;
+            START  : next = DATA;
+            DATA   : next = (count >= 4'd8) ? PARITY : DATA;
+            PARITY : next = in ? STOP : WAIT;
+            STOP   : next = in ? NONE : START;
+            WAIT   : next = in ? NONE : WAIT;
             default : next = state;
         endcase
     end
@@ -52,6 +45,12 @@ module top_module(
             end
         end
     end
+    parity u0_parity(
+        .clk( clk ),
+        .reset( reset | (next != DATA & next != PARITY) ),
+        .in( in & (next == DATA | next == PARITY) ),
+        .odd( parity_check )
+    );
 
     // Output logic
     always @(posedge clk) begin
@@ -59,7 +58,7 @@ module top_module(
             done <= 1'd0;
         end
         else begin
-            done <= (next == STOP);
+            done <= (next == STOP & parity_check);
             if (next == DATA) begin
                 out_byte[count] <= in;
             end
